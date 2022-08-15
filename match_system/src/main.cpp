@@ -7,6 +7,11 @@
 #include <thrift/transport/TServerSocket.h>
 #include <thrift/transport/TBufferTransports.h>
 #include <iostream>
+#include <thread>
+#include <mutex>
+#include <condition_variable>
+#include <queue>
+#include <vector>
 
 using namespace ::apache::thrift;
 using namespace ::apache::thrift::protocol;
@@ -14,8 +19,59 @@ using namespace ::apache::thrift::transport;
 using namespace ::apache::thrift::server;
 
 using namespace  ::match_service;
-
 using namespace std;
+
+struct Task
+{
+    User user;
+    string type;
+};
+
+struct MessageQueue
+{
+    queue<Task> q;
+    mutex m;
+    condition_variable cv;
+}messageQueue;
+
+class Pool
+{
+    public:
+        void saveResult(int a, int b)
+        {
+            printf("Match result: %d %d\n", a, b);
+        }
+
+        void match()
+        {
+            while(users.size() > 1)
+            {
+                auto a = users[0], b = users[1];
+                users.erase(users.begin());
+                users.erase(users.begin());
+                saveResult(a.id, b.id);
+            }
+        }
+
+        void add(User user)
+        {
+            users.push_back(user);
+        }
+
+        void remove(User user)
+        {
+            for (uint32_t i = 0; i < users.size(); i ++ )
+            {
+                if (users[i].id == user.id)
+                {
+                    users.erase(users.begin() + i);
+                }
+            }
+        }
+    private:
+        vector<User> users;
+
+}pool;
 
 class MatchHandler : virtual public MatchIf {
  public:
@@ -26,14 +82,50 @@ class MatchHandler : virtual public MatchIf {
   int32_t add_user(const User& user, const std::string& info) {
     // Your implementation goes here
     printf("add_user\n");
+    // 加锁 不需要显式解锁
+    unique_lock<mutex> lck(messageQueue.m);
+    messageQueue.q.push({user, "add"});
+    messageQueue.cv.notify_all(); // 唤醒所有阻塞的条件变量 其中随机一个会执行
+
+    return 0;
   }
 
   int32_t remove_user(const User& user, const std::string& info) {
     // Your implementation goes here
     printf("remove_user\n");
+    
+    unique_lock<mutex> lck(messageQueue.m);
+    messageQueue.q.push({user, "remove"});
+    messageQueue.cv.notify_all();
+
+    return 0;
   }
 
 };
+
+void consumeTask()
+{
+    while(true)
+    {
+        unique_lock<mutex> lck(messageQueue.m);
+        if (messageQueue.q.empty())
+        {
+            // 条件变量控制让权等待 防止无休止循环
+            messageQueue.cv.wait(lck);
+        }
+        else
+        {
+            auto task = messageQueue.q.front();
+            messageQueue.q.pop();
+            lck.unlock();   // 必须解锁 防止持有锁的时间过长
+            // do task
+            
+            if (task.type == "add") pool.add(task.user);
+            else if (task.type == "remove") pool.remove(task.user);
+            pool.match();
+        }
+    }
+}
 
 int main(int argc, char **argv) {
   int port = 9090;
@@ -46,6 +138,9 @@ int main(int argc, char **argv) {
   TSimpleServer server(processor, serverTransport, transportFactory, protocolFactory);
 
   cout << "start match server" << endl;
+
+  thread matchingThread(consumeTask);
+
   server.serve();
   return 0;
 }
