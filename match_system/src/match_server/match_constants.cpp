@@ -6,12 +6,13 @@
  */
 #include "match_constants.h"
 
-namespace match_service {
+namespace match_service
+{
 
-const matchConstants g_match_constants;
+    const matchConstants g_match_constants;
 
-matchConstants::matchConstants() {
-}
+    matchConstants::matchConstants()
+    {
+    }
 
 } // namespace
-

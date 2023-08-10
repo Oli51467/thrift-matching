@@ -20,16 +20,16 @@ class User(object):
     """
     Attributes:
      - id
-     - score
      - name
+     - score
 
     """
 
 
-    def __init__(self, id=None, score=None, name=None,):
+    def __init__(self, id=None, name=None, score=None,):
         self.id = id
-        self.score = score
         self.name = name
+        self.score = score
 
     def read(self, iprot):
         if iprot._fast_decode is not None and isinstance(iprot.trans, TTransport.CReadableTransport) and self.thrift_spec is not None:
@@ -46,13 +46,13 @@ class User(object):
                 else:
                     iprot.skip(ftype)
             elif fid == 2:
-                if ftype == TType.I32:
-                    self.score = iprot.readI32()
+                if ftype == TType.STRING:
+                    self.name = iprot.readString().decode('utf-8', errors='replace') if sys.version_info[0] == 2 else iprot.readString()
                 else:
                     iprot.skip(ftype)
             elif fid == 3:
-                if ftype == TType.STRING:
-                    self.name = iprot.readString().decode('utf-8', errors='replace') if sys.version_info[0] == 2 else iprot.readString()
+                if ftype == TType.I32:
+                    self.score = iprot.readI32()
                 else:
                     iprot.skip(ftype)
             else:
@@ -69,13 +69,13 @@ class User(object):
             oprot.writeFieldBegin('id', TType.I32, 1)
             oprot.writeI32(self.id)
             oprot.writeFieldEnd()
-        if self.score is not None:
-            oprot.writeFieldBegin('score', TType.I32, 2)
-            oprot.writeI32(self.score)
-            oprot.writeFieldEnd()
         if self.name is not None:
-            oprot.writeFieldBegin('name', TType.STRING, 3)
+            oprot.writeFieldBegin('name', TType.STRING, 2)
             oprot.writeString(self.name.encode('utf-8') if sys.version_info[0] == 2 else self.name)
+            oprot.writeFieldEnd()
+        if self.score is not None:
+            oprot.writeFieldBegin('score', TType.I32, 3)
+            oprot.writeI32(self.score)
             oprot.writeFieldEnd()
         oprot.writeFieldStop()
         oprot.writeStructEnd()
@@ -97,8 +97,8 @@ all_structs.append(User)
 User.thrift_spec = (
     None,  # 0
     (1, TType.I32, 'id', None, None, ),  # 1
-    (2, TType.I32, 'score', None, None, ),  # 2
-    (3, TType.STRING, 'name', 'UTF8', None, ),  # 3
+    (2, TType.STRING, 'name', 'UTF8', None, ),  # 2
+    (3, TType.I32, 'score', None, None, ),  # 3
 )
 fix_spec(all_structs)
 del all_structs

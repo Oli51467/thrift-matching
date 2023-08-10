@@ -8,9 +8,10 @@ from thrift.protocol import TBinaryProtocol
 
 from sys import stdin
 
-def operate(op, userId, score, userName):
+
+def operate(op, user_id, username, score):
     # Make socket
-    transport = TSocket.TSocket('localhost', 9090)
+    transport = TSocket.TSocket('127.0.0.1', 9090)
 
     # Buffering is critical. Raw sockets are very slow
     transport = TTransport.TBufferedTransport(transport)
@@ -24,7 +25,7 @@ def operate(op, userId, score, userName):
     # Connect!
     transport.open()
 
-    user = User(userId, score, userName)
+    user = User(user_id, username, score)
 
     if op == "add":
         client.add_user(user, "")
@@ -34,10 +35,12 @@ def operate(op, userId, score, userName):
     # Close!
     transport.close()
 
+
 def main():
     for line in stdin:
-        op, userId, score, userName = line.split(' ')
-        operate(op, int(userId), int(score), userName)
+        op, user_id, username, score = line.split(' ')
+        operate(op, int(user_id), username, int(score))
+
 
 if __name__ == "__main__":
     main()

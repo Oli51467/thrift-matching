@@ -9,15 +9,16 @@
 
 #include "match_types.h"
 
-namespace match_service {
+namespace match_service
+{
 
-class matchConstants {
- public:
-  matchConstants();
+    class matchConstants
+    {
+    public:
+        matchConstants();
+    };
 
-};
-
-extern const matchConstants g_match_constants;
+    extern const matchConstants g_match_constants;
 
 } // namespace
 
